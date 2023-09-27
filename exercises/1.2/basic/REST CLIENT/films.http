@@ -1,0 +1,19 @@
+### Read all films with File variable
+@baseUrl = http://localhost:3000
+GET {{baseUrl}}/films
+
+
+### Read all films sorted by title (ascending)
+GET {{baseUrl}}/films/?minimum-duration=160
+
+
+### Create a film
+POST {{baseUrl}}/films
+Content-Type: application/json
+
+{
+    "title" : "Roi Lionefesfse",
+    "duration" : 100 ,
+    "budget" : 10201,
+    "link" : "bldsfsabla"
+}
