@@ -43,17 +43,18 @@ const MENU = [
    GET /films?minimum-duration=150 : filtering
 */
 router.get('/', (req, res, next) => {
-  const filterDuration =
-    req?.query['minimum-duration']
-      ? req.query['minimum-duration']
-      : undefined;
-  let filteredMenu;
-  console.log(`order by ${filterDuration ?? 'not requested'}`);
-  if (filterDuration){
-    filteredMenu = [...MENU].filter((MENU) => MENU.duration >= filterDuration);
-  }
-  console.log('GET /films');
-  res.json(filteredMenu ?? MENU);
+  const minimumFilmDuration = req?.query
+    ? Number(req.query['minimum-duration'])
+    : undefined;
+  if (typeof minimumFilmDuration !== 'number' || minimumFilmDuration <= 0)
+    return res.sendStatus(400);
+
+  if (!minimumFilmDuration) return res.json(films);
+
+  const filmsReachingMinimumDuration = films.filter(
+    (film) => film.duration >= minimumFilmDuration
+  );
+  return res.json(filmsReachingMinimumDuration);
 });
 
 router.get('/:id', (req, res) => {
@@ -73,6 +74,12 @@ router.post('/', (req, res) => {
   const budget = req?.body?.budget >= 0 ? req.body.budget : undefined;
   const link = req?.body?.link?.length !== 0 ? req.body.link : undefined;
 
+  if (!title || !duration || !budget || !link) return res.sendStatus(400); // error code '400 Bad request'
+
+  const existingFilm = films.find(
+    (film) => film.title.toLowerCase() === title.toLowerCase()
+  );
+  if (existingFilm) return res.sendStatus(409);
 
   console.log('POST /films');
 
