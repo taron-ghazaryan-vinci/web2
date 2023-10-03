@@ -12,8 +12,32 @@ POST {{baseUrl}}/films
 Content-Type: application/json
 
 {
-    "title" : "ta mecdsdqsdqsdqsdcre",
+    "title" : "ta mecdsdfsdfdsfqsdqsdqsdcre",
     "duration" : 100 ,
     "budget" : 10201,
     "link" : "bldsfsabla"
+}
+
+
+### Delete film identified by 2
+DELETE {{baseUrl}}/films/2
+
+
+### Update the pizza identified by 6
+PATCH {{baseUrl}}/films/3
+Content-Type: application/json
+
+{
+    "title":"Magic Greevvhvhn 2"
+}
+
+### Update film with id=2
+PUT {{baseUrl}}/films/65
+Content-Type: application/json
+
+{
+    "title":"Attack of the beast",
+    "duration": 666,
+    "budget": 666,
+    "link":"https://666"
 }
