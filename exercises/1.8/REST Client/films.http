@@ -1,0 +1,43 @@
+### Read all films with File variable
+@baseUrl = http://localhost:3000
+GET {{baseUrl}}/films
+
+
+### Read all films sorted by title (ascending)
+GET {{baseUrl}}/films/?minimum-duration=160
+
+
+### Create a film
+POST {{baseUrl}}/films
+Content-Type: application/json
+
+{
+    "title" : "ta mecdsdfsdfdsfqsdqsdqsdcre",
+    "duration" : 100 ,
+    "budget" : 10201,
+    "link" : "bldsfsabla"
+}
+
+
+### Delete film identified by 2
+DELETE {{baseUrl}}/films/6
+
+
+### Update the pizza identified by 6
+PATCH {{baseUrl}}/films/3
+Content-Type: application/json
+
+{
+    "title":"Magic axper"
+}
+
+### Update film with id=2
+PUT {{baseUrl}}/films/65
+Content-Type: application/json
+
+{
+    "title":"Attack of the beast",
+    "duration": 666,
+    "budget": 666,
+    "link":"https://666"
+}
