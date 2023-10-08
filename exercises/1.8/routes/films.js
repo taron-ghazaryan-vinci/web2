@@ -1,207 +1,108 @@
-/* eslint-disable eqeqeq */
 const express = require('express');
-const { serialize, parse } = require('../utils/json');
+const {
+  readAllFilms,
+  readOneFilm,
+  createOneFilm,
+  deleteOneFilm,
+  updatePartiallyOneFilm,
+  updateFullyOneFilmOrCreateOneFilm,
+} = require('../models/films');
 
 const router = express.Router();
 
-// eslint-disable-next-line prefer-template, no-path-concat
-const jsonDbPath = __dirname + '/../data/films.json';
+// Read all the films, filtered by minimum-duration if the query param exists
+router.get('/', (req, res) => {
+  const filmsPotentiallyFiltered = readAllFilms(req?.query?.['minimum-duration']);
 
-const MENU = [
-  {
-    id: 1,
-    title: 'Roi Lion',
-    duration : 120 ,
-    budget : 1000201,
-    link : 'blabla'
-  },
-  {
-    id: 2,
-    title: 'Spiderman',
-    duration : 150,
-    budget : 1000000,
-    link : 'blabla'
-  },
-  {
-    id: 3,
-    title: 'NiqueZebi',
-    duration : 200,
-    budget : 41452,
-    link : 'blabla'
-  },
-  {
-    id: 4,
-    title: 'GadonBlyat',
-    duration : 100,
-    budget : 1445555,
-    link : 'blabla'
-  },
-  {
-    id: 5,
-    title: 'Naxuy',
-    duration : 150,
-    budget : 5000000,
-    link : 'blabla'
-  },
-];
+  if (filmsPotentiallyFiltered === undefined) return res.sendStatus(400);
 
-/* Read all the films from the menu
-   GET /films?minimum-duration=150:filtering
-*/
-// eslint-disable-next-line no-unused-vars
-router.get('/', (req, res, next) => {
-  const minimumFilmDuration = req?.query
-    ? Number(req.query['minimum-duration'])
-    : undefined;
-
-  const films = parse(jsonDbPath, MENU); 
-    
-  if (typeof minimumFilmDuration !== 'number' || minimumFilmDuration <= 0)
-    return res.sendStatus(400);
-
-  if (!minimumFilmDuration) return res.json(films);
-
-  const filmsReachingMinimumDuration = films.filter(
-    (film) => film.duration >= minimumFilmDuration
-  );
-  return res.json(filmsReachingMinimumDuration);
+  return res.json(filmsPotentiallyFiltered);
 });
 
-// eslint-disable-next-line consistent-return
+// Read a film from its id in the menu
 router.get('/:id', (req, res) => {
-  console.log(`GET /films/${req.params.id}`);
+  const foundFilm = readOneFilm(req?.params?.id);
 
-  const films = parse(jsonDbPath, MENU);
+  if (!foundFilm) return res.sendStatus(404);
 
-  const indexOfFilmFound = films.findIndex((film) => film.id == req.params.id);
-
-  if (indexOfFilmFound < 0) return res.sendStatus(404);
-
-  res.json(films[indexOfFilmFound]);
+  return res.json(foundFilm);
 });
 
-// Create a film to be added to the menu.
-// eslint-disable-next-line consistent-return
+// Create a film
 router.post('/', (req, res) => {
-  const title = req?.body?.title?.length !== 0 ? req.body.title : undefined;
+  const title = req?.body?.title?.trim()?.length !== 0 ? req.body.title : undefined;
+  const link = req?.body?.content?.trim().length !== 0 ? req.body.link : undefined;
   const duration =
     typeof req?.body?.duration !== 'number' || req.body.duration < 0
       ? undefined
       : req.body.duration;
   const budget =
-    typeof req?.body?.budget !== 'number' || req.body.budget < 0
-      ? undefined
-      : req.body.budget;
-  const link = req?.body?.link?.length !== 0 ? req.body.link : undefined;
+    typeof req?.body?.budget !== 'number' || req.body.budget < 0 ? undefined : req.body.budget;
 
-  if (!title || !duration || !budget || !link) return res.sendStatus(400); // error code '400 Bad request'
+  if (!title || !link || !duration || !budget) return res.sendStatus(400);
 
-  const films = parse(jsonDbPath, MENU);
+  const createdFilm = createOneFilm(title, link, duration, budget);
 
-  const existingFilm = films.find(
-    (film) => film.title.toLowerCase() === title.toLowerCase()
-  );
-  if (existingFilm) return res.sendStatus(409);
-
-  console.log('POST /films');
-
-  const lastItemIndex = films?.length !== 0 ? films.length - 1 : undefined;
-  const lastId = lastItemIndex !== undefined ? films[lastItemIndex]?.id : 0;
-  const nextId = lastId + 1;
-
-  const newFilm = {
-    id: nextId,
-    title,
-    duration,
-    budget,
-    link
-  };
-
-  films.push(newFilm);
-  serialize(jsonDbPath, films);
-  res.json(newFilm);
+  return res.json(createdFilm);
 });
 
-
-// Delete a pizza from the menu based on its id
-// eslint-disable-next-line consistent-return
+// Delete a film
 router.delete('/:id', (req, res) => {
-  console.log(`DELETE /films/${req.params.id}`);
+  const deletedFilm = deleteOneFilm(req?.params?.id);
 
-  const films = parse(jsonDbPath, MENU);
+  if (!deletedFilm) return res.sendStatus(404);
 
-  // eslint-disable-next-line eqeqeq
-  const foundIndex = films.findIndex(film => film.id == req.params.id);
-
-  if (foundIndex < 0) return res.sendStatus(404);
-
-  const itemsRemovedFromMenu = films.splice(foundIndex, 1);
-  const itemRemoved = itemsRemovedFromMenu[0];
-
-  serialize(jsonDbPath, films);
-
-  res.json(itemRemoved);
+  return res.json(deletedFilm);
 });
 
-
-// Update a film based on its id and new values for its parameters
-// eslint-disable-next-line consistent-return
+// Update one or more properties of a film identified by its id
 router.patch('/:id', (req, res) => {
-  console.log(`PATCH /films/${req.params.id}`);
-
   const title = req?.body?.title;
+  const link = req?.body?.link;
   const duration = req?.body?.duration;
   const budget = req?.body?.budget;
-  const link = req?.body?.link;
 
+  if (
+    !req.body ||
+    (title !== undefined && !title.trim()) ||
+    (link !== undefined && !link.trim()) ||
+    (duration !== undefined && (typeof req?.body?.duration !== 'number' || duration < 0)) ||
+    (budget !== undefined && (typeof req?.body?.budget !== 'number' || budget < 0))
+  )
+    return res.sendStatus(400);
 
-  console.log('POST /films');
+  const updatedFilm = updatePartiallyOneFilm(req?.params?.id, req?.body);
 
-  if ((!title && !duration && !budget) || title?.length === 0 || link?.length === 0 || duration< 0  || budget<0 ) return res.sendStatus(400);
+  if (!updatedFilm) return res.sendStatus(404);
 
-  const films = parse(jsonDbPath, MENU);
-
-  const foundIndex = films.findIndex(film => film.id == req.params.id);
-
-  if (foundIndex < 0) return res.sendStatus(404);
-
-  const updatedFilm = {...films[foundIndex], ...req.body};
-
-  films[foundIndex] = updatedFilm;
-
-  res.json(updatedFilm);
+  return res.json(updatedFilm);
 });
 
-
-// eslint-disable-next-line consistent-return
+// Update a film only if all properties are given or create it if it does not exist and the id is not existant
 router.put('/:id', (req, res) => {
   const title = req?.body?.title;
   const link = req?.body?.link;
   const duration = req?.body?.duration;
   const budget = req?.body?.budget;
 
-  if ((!title && !duration && !budget) || title?.length === 0 || link?.length === 0 || duration< 0  || budget<0 ) return res.sendStatus(400);
+  if (
+    !req.body ||
+    !title ||
+    !title.trim() ||
+    !link ||
+    !link.trim() ||
+    duration === undefined ||
+    typeof req?.body?.duration !== 'number' ||
+    duration < 0 ||
+    budget === undefined ||
+    typeof req?.body?.budget !== 'number' ||
+    budget < 0
+  )
+    return res.sendStatus(400);
 
-  const {id} = req.params;
-  // eslint-disable-next-line eqeqeq
-  const indexOfFilmFound = MENU.findIndex((film) => film.id == id);
+  const updatedFilmOrNewFilm = updateFullyOneFilmOrCreateOneFilm(req?.params?.id, req?.body);
 
-  if (indexOfFilmFound < 0) {
-    const newFilm = { id, title, link, duration, budget };
-    MENU.push(newFilm);
-    return res.json(newFilm);
-  }
-
-  // eslint-disable-next-line eqeqeq
-  const foundIndex = MENU.findIndex(film => film.id == req.params.id);
-
-  if (foundIndex < 0) return res.sendStatus(404);
-
-  const updatedFilm = {...MENU[foundIndex], ...req.body};
-
-  MENU[foundIndex] = updatedFilm;
-
-  res.json(updatedFilm);
+  return res.json(updatedFilmOrNewFilm);
 });
 
 module.exports = router;
