@@ -19,7 +19,7 @@ const MENU = [
     },
     {
       id: 3,
-      title: 'Avengers',
+      title: 'Avengers',  
       duration : 200,
       budget : 41452,
       link : 'blabla'
