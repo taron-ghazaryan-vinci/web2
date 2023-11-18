@@ -68,10 +68,9 @@ const HomePage = () => {
   </div>
 </div>`;
 
-
-  main.addEventListener('click', controlMusic);
-
   renderTable(MENU);
+  
+  main.addEventListener('click', controlMusic);
 
   changingColorTable();
 };
@@ -123,8 +122,10 @@ const HomePage = () => {
 
   function controlMusic(){
     const music = document.querySelector('audio');
-    if(music.paused) music.play();
-    else music.pause();
+    if(music){
+      if(music.paused) music.play();
+      else music.pause();
+    }
   }
 
   function changingColorTable(){
